@@ -5,8 +5,6 @@ use std::ops::RangeBounds;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-
-
 use openraft::async_trait::async_trait;
 use openraft::storage::LogState;
 use openraft::storage::Snapshot;
@@ -76,6 +74,12 @@ pub struct MemStore {
     current_snapshot: RwLock<Option<StoredSnapshot>>,
 }
 
+impl MemStore {
+    pub async fn new_async() -> Arc<Self> {
+        Arc::new(Self::default())
+    }
+}
+
 #[async_trait]
 impl RaftLogReader<TypeConfig> for Arc<MemStore> {
     async fn get_log_state(&mut self) -> Result<LogState<TypeConfig>, StorageError<NodeId>> {
@@ -100,7 +104,10 @@ impl RaftLogReader<TypeConfig> for Arc<MemStore> {
         range: RB,
     ) -> Result<Vec<Entry<TypeConfig>>, StorageError<NodeId>> {
         let log = self.log.read().await;
-        let response = log.range(range.clone()).map(|(_, val)| val.clone()).collect::<Vec<_>>();
+        let response = log
+            .range(range.clone())
+            .map(|(_, val)| val.clone())
+            .collect::<Vec<_>>();
         Ok(response)
     }
 }
@@ -116,7 +123,8 @@ impl RaftSnapshotBuilder<TypeConfig> for Arc<MemStore> {
         {
             // Serialize the data of the state machine.
             let state_machine = self.state_machine.read().await;
-            data = serde_json::to_vec(&*state_machine).map_err(|e| StorageIOError::read_state_machine(&e))?;
+            data = serde_json::to_vec(&*state_machine)
+                .map_err(|e| StorageIOError::read_state_machine(&e))?;
 
             last_applied_log = state_machine.last_applied_log;
             last_membership = state_machine.last_membership.clone();
@@ -175,7 +183,9 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
 
     #[tracing::instrument(level = "trace", skip(self, entries))]
     async fn append_to_log<I>(&mut self, entries: I) -> Result<(), StorageError<NodeId>>
-    where I: IntoIterator<Item = Entry<TypeConfig>> + Send {
+    where
+        I: IntoIterator<Item = Entry<TypeConfig>> + Send,
+    {
         let mut log = self.log.write().await;
         for entry in entries {
             log.insert(entry.log_id.index, entry);
@@ -184,11 +194,17 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
     }
 
     #[tracing::instrument(level = "debug", skip(self))]
-    async fn delete_conflict_logs_since(&mut self, log_id: LogId<NodeId>) -> Result<(), StorageError<NodeId>> {
+    async fn delete_conflict_logs_since(
+        &mut self,
+        log_id: LogId<NodeId>,
+    ) -> Result<(), StorageError<NodeId>> {
         tracing::debug!("delete_log: [{:?}, +oo)", log_id);
 
         let mut log = self.log.write().await;
-        let keys = log.range(log_id.index..).map(|(k, _v)| *k).collect::<Vec<_>>();
+        let keys = log
+            .range(log_id.index..)
+            .map(|(k, _v)| *k)
+            .collect::<Vec<_>>();
         for key in keys {
             log.remove(&key);
         }
@@ -209,7 +225,10 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
         {
             let mut log = self.log.write().await;
 
-            let keys = log.range(..=log_id.index).map(|(k, _v)| *k).collect::<Vec<_>>();
+            let keys = log
+                .range(..=log_id.index)
+                .map(|(k, _v)| *k)
+                .collect::<Vec<_>>();
             for key in keys {
                 log.remove(&key);
             }
@@ -220,9 +239,13 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
 
     async fn last_applied_state(
         &mut self,
-    ) -> Result<(Option<LogId<NodeId>>, StoredMembership<NodeId, BasicNode>), StorageError<NodeId>> {
+    ) -> Result<(Option<LogId<NodeId>>, StoredMembership<NodeId, BasicNode>), StorageError<NodeId>>
+    {
         let state_machine = self.state_machine.read().await;
-        Ok((state_machine.last_applied_log, state_machine.last_membership.clone()))
+        Ok((
+            state_machine.last_applied_log,
+            state_machine.last_membership.clone(),
+        ))
     }
 
     #[tracing::instrument(level = "trace", skip(self, entries))]
@@ -284,7 +307,9 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
         // Update the state machine.
         {
             let updated_state_machine: StateMachine = serde_json::from_slice(&new_snapshot.data)
-                .map_err(|e| StorageIOError::read_snapshot(Some(new_snapshot.meta.signature()), &e))?;
+                .map_err(|e| {
+                    StorageIOError::read_snapshot(Some(new_snapshot.meta.signature()), &e)
+                })?;
             let mut state_machine = self.state_machine.write().await;
             *state_machine = updated_state_machine;
         }
@@ -296,7 +321,9 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
     }
 
     #[tracing::instrument(level = "trace", skip(self))]
-    async fn get_current_snapshot(&mut self) -> Result<Option<Snapshot<TypeConfig>>, StorageError<NodeId>> {
+    async fn get_current_snapshot(
+        &mut self,
+    ) -> Result<Option<Snapshot<TypeConfig>>, StorageError<NodeId>> {
         match &*self.current_snapshot.read().await {
             Some(snapshot) => {
                 let data = snapshot.data.clone();
@@ -324,6 +351,6 @@ mod test {
 
     #[test]
     pub fn test_mem_store() {
-        openraft::testing::Suite::test_all(MemStore::default).unwrap();
+        openraft::testing::Suite::test_all(MemStore::new_async).unwrap();
     }
 }

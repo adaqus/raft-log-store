@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.3.1"
+async-trait = "0.1.51"
 openraft = { git = "https://github.com/datafuselabs/openraft", branch = "main", features = ["serde"] }
+reqwest = { version = "0.11.4", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.57"
 thiserror = "1.0.30"
