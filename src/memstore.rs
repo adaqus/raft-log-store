@@ -320,10 +320,10 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
 
 #[cfg(test)]
 mod test {
+    use crate::memstore::MemStore;
+
     #[test]
     pub fn test_mem_store() {
-        let is_error = openraft::testing::Suite::test_all(MemStore::default);
-
-        assert!(!is_error);
+        openraft::testing::Suite::test_all(MemStore::default).unwrap();
     }
 }
