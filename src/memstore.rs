@@ -5,8 +5,8 @@ use std::ops::RangeBounds;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use openraft::AppData;
-use openraft::AppDataResponse;
+
+
 use openraft::async_trait::async_trait;
 use openraft::storage::LogState;
 use openraft::storage::Snapshot;
@@ -321,7 +321,9 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
 #[cfg(test)]
 mod test {
     #[test]
-    pub fn test_mem_store() -> anyhow::Result<()> {
-        openraft::testing::Suite::test_all(MemStore::new)
+    pub fn test_mem_store() {
+        let is_error = openraft::testing::Suite::test_all(MemStore::default);
+
+        assert!(!is_error);
     }
 }

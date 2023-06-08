@@ -7,15 +7,15 @@
 // use openraft::RaftTypeConfig;
 
 use std::io::Cursor;
-use std::sync::Arc;
+
 
 // use openraft::storage::Adaptor;
 use openraft::BasicNode;
-use openraft::Config;
+
 
 use crate::memstore::Request;
 use crate::memstore::Response;
-use crate::memstore::MemStore;
+
 
 pub type NodeId = u64;
 
