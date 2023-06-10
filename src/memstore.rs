@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io::Cursor;
 use std::ops::RangeBounds;
@@ -53,7 +54,7 @@ pub struct StateMachine {
     pub last_membership: StoredMembership<NodeId, BasicNode>,
 
     /// Application data.
-    pub data: BTreeMap<String, String>,
+    pub data: HashMap<String, String>,
 }
 
 #[derive(Debug, Default)]

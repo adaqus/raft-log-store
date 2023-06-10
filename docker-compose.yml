@@ -1,0 +1,40 @@
+version: "2"
+
+services:
+
+  compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.compiler
+      args:
+        USER_ID: ${USER_ID}
+        GROUP_ID: ${GROUP_ID}
+    working_dir: /var/app
+    volumes:
+      - "~/.ssh:/home/app/.ssh"
+      - "~/.gitconfig:/home/app/.gitconfig"
+      - ".:/var/app"
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      RUSTAPP_LOG_LEVEL: "DEBUG"
+    user: ${USER_ID}:${GROUP_ID}
+  
+  raft-log-store:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_SOURCE: ./$RUST_BINARY_PATH
+    working_dir: /var/app
+    volumes:
+      - "./$RUST_BINARY_PATH:/var/app/raft-log-store"
+    environment:
+      RUST_LOG: "$RUST_LOG"
+    command: /var/app/raft-log-store --id 1 --http-addr 0.0.0.0:8080
+    ports:
+      - "9050:8080"
+    tty: true
+    user: ${USER_ID}:${GROUP_ID}
+    networks:
+      - default
