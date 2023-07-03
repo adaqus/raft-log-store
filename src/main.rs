@@ -3,7 +3,7 @@ use actix_web::middleware::Logger;
 use actix_web::web::Data;
 use actix_web::HttpServer;
 use clap::Parser;
-use memstore::MemStore;
+use store::memstore::MemStore;
 use network::Network;
 use openraft::storage::Adaptor;
 use openraft::BasicNode;
@@ -12,13 +12,13 @@ use std::io::Cursor;
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
-use crate::memstore::Request;
-use crate::memstore::Response;
+use crate::store::Request;
+use crate::store::Response;
 
 pub type NodeId = u64;
 
 mod http_handler;
-mod memstore;
+mod store;
 mod network;
 
 openraft::declare_raft_types!(

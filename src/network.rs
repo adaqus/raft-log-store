@@ -25,6 +25,7 @@ pub struct Network {
 
 impl Network {
     pub fn new() -> Self {
+        eprint!("Network::new()");
         Network {
             http_client: reqwest::Client::new(),
         }

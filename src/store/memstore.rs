@@ -28,24 +28,10 @@ use tokio::sync::RwLock;
 
 use crate::NodeId;
 use crate::TypeConfig;
+use crate::store::Request;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Request {
-    Set { key: String, value: String },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Response {
-    pub value: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct StoredSnapshot {
-    pub meta: SnapshotMeta<NodeId, BasicNode>,
-
-    /// The data of the state machine at the time of this snapshot.
-    pub data: Vec<u8>,
-}
+use super::Response;
+use super::StoredSnapshot;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct StateMachine {

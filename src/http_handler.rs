@@ -14,7 +14,7 @@ use openraft::RaftMetrics;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
-use crate::memstore::Request;
+use crate::store::Request;
 use crate::App;
 use crate::NodeId;
 use crate::TypeConfig;
