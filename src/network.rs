@@ -10,12 +10,12 @@ use openraft::raft::InstallSnapshotRequest;
 use openraft::raft::InstallSnapshotResponse;
 use openraft::raft::VoteRequest;
 use openraft::raft::VoteResponse;
-use openraft::BasicNode;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 // use crate::typ;
 use crate::types;
+use crate::Node;
 use crate::NodeId;
 use crate::TypeConfig;
 
@@ -34,10 +34,10 @@ impl Network {
     pub async fn send_rpc<Req, Resp, Err>(
         &self,
         target: NodeId,
-        target_node: &BasicNode,
+        target_node: &Node,
         uri: &str,
         req: Req,
-    ) -> Result<Resp, openraft::error::RPCError<NodeId, BasicNode, Err>>
+    ) -> Result<Resp, openraft::error::RPCError<NodeId, Node, Err>>
     where
         Req: Serialize,
         Err: std::error::Error + DeserializeOwned,
@@ -73,7 +73,7 @@ impl Network {
 impl RaftNetworkFactory<TypeConfig> for Network {
     type Network = NetworkConnection;
 
-    async fn new_client(&mut self, target: NodeId, node: &BasicNode) -> Self::Network {
+    async fn new_client(&mut self, target: NodeId, node: &Node) -> Self::Network {
         NetworkConnection {
             owner: Network::new(),
             target,
@@ -85,7 +85,7 @@ impl RaftNetworkFactory<TypeConfig> for Network {
 pub struct NetworkConnection {
     owner: Network,
     target: NodeId,
-    target_node: BasicNode,
+    target_node: Node,
 }
 
 #[async_trait]

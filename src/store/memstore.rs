@@ -9,7 +9,6 @@ use std::sync::Mutex;
 use openraft::async_trait::async_trait;
 use openraft::storage::LogState;
 use openraft::storage::Snapshot;
-use openraft::BasicNode;
 use openraft::Entry;
 use openraft::EntryPayload;
 use openraft::LogId;
@@ -26,6 +25,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use tokio::sync::RwLock;
 
+use crate::Node;
 use crate::NodeId;
 use crate::TypeConfig;
 use crate::store::Request;
@@ -37,7 +37,7 @@ use super::StoredSnapshot;
 pub struct StateMachine {
     pub last_applied_log: Option<LogId<NodeId>>,
 
-    pub last_membership: StoredMembership<NodeId, BasicNode>,
+    pub last_membership: StoredMembership<NodeId, Node>,
 
     /// Application data.
     pub data: HashMap<String, String>,
@@ -226,7 +226,7 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
 
     async fn last_applied_state(
         &mut self,
-    ) -> Result<(Option<LogId<NodeId>>, StoredMembership<NodeId, BasicNode>), StorageError<NodeId>>
+    ) -> Result<(Option<LogId<NodeId>>, StoredMembership<NodeId, Node>), StorageError<NodeId>>
     {
         let state_machine = self.state_machine.read().await;
         Ok((
@@ -278,7 +278,7 @@ impl RaftStorage<TypeConfig> for Arc<MemStore> {
     #[tracing::instrument(level = "trace", skip(self, snapshot))]
     async fn install_snapshot(
         &mut self,
-        meta: &SnapshotMeta<NodeId, BasicNode>,
+        meta: &SnapshotMeta<NodeId, Node>,
         snapshot: Box<<TypeConfig as RaftTypeConfig>::SnapshotData>,
     ) -> Result<(), StorageError<NodeId>> {
         tracing::info!(

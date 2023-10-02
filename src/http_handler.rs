@@ -9,13 +9,13 @@ use openraft::error::RaftError;
 use openraft::raft::AppendEntriesRequest;
 use openraft::raft::InstallSnapshotRequest;
 use openraft::raft::VoteRequest;
-use openraft::BasicNode;
 use openraft::RaftMetrics;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use crate::store::Request;
 use crate::App;
+use crate::Node;
 use crate::NodeId;
 use crate::TypeConfig;
 
@@ -25,7 +25,7 @@ pub async fn add_learner(
     req: Json<(NodeId, String)>,
 ) -> actix_web::Result<impl Responder> {
     let node_id = req.0 .0;
-    let node = BasicNode {
+    let node = Node {
         addr: req.0 .1.clone(),
     };
     let res = app.raft.add_learner(node_id, node, true).await;
@@ -48,7 +48,7 @@ pub async fn init(app: Data<App>) -> actix_web::Result<impl Responder> {
     let mut nodes = BTreeMap::new();
     nodes.insert(
         app.id,
-        BasicNode {
+        Node {
             addr: app.addr.clone(),
         },
     );
@@ -61,7 +61,7 @@ pub async fn init(app: Data<App>) -> actix_web::Result<impl Responder> {
 pub async fn metrics(app: Data<App>) -> actix_web::Result<impl Responder> {
     let metrics = app.raft.metrics().borrow().clone();
 
-    let res: Result<RaftMetrics<NodeId, BasicNode>, Infallible> = Ok(metrics);
+    let res: Result<RaftMetrics<NodeId, Node>, Infallible> = Ok(metrics);
     Ok(Json(res))
 }
 
@@ -102,9 +102,9 @@ pub async fn write(app: Data<App>, req: Json<Request>) -> actix_web::Result<impl
 pub async fn read(app: Data<App>, req: Json<String>) -> actix_web::Result<impl Responder> {
     let state_machine = app.store.state_machine.read().await;
     let key = req.0;
-    let value = state_machine.data.get(&key).cloned();
+    let value = state_machine.get(&key);
 
-    let res: Result<String, Infallible> = Ok(value.unwrap_or_default());
+    let res: Result<String, Infallible> = Ok(value?.unwrap_or_default());
     Ok(Json(res))
 }
 
@@ -119,9 +119,9 @@ pub async fn consistent_read(
         Ok(_) => {
             let state_machine = app.store.state_machine.read().await;
             let key = req.0;
-            let value = state_machine.data.get(&key).cloned();
+            let value = state_machine.get(&key);
 
-            let res: Result<String, RaftError<NodeId, CheckIsLeaderError<NodeId, BasicNode>>> =
+            let res: Result<String, RaftError<NodeId, CheckIsLeaderError<NodeId, Node>>> =
                 Ok(value.unwrap_or_default());
             Ok(Json(res))
         }
