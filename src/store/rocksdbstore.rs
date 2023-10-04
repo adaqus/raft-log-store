@@ -212,7 +212,7 @@ impl RocksDbStore {
         verb: ErrorVerb,
     ) -> Result<(), StorageIOError<NodeId>> {
         self.db
-            .flush_wal(true)
+            .flush_wal(false)
             .map_err(|e| StorageIOError::new(subject, verb, AnyError::new(&e)))?;
         Ok(())
     }
