@@ -3,6 +3,9 @@ name = "raft-log-store"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+debug = 1
+
 [dependencies]
 actix-web = "4.3.1"
 async-trait = "0.1.51"
@@ -17,3 +20,10 @@ thiserror = "1.0.30"
 tokio = { version = "1.0", default-features = false, features = ["sync"] }
 tracing = "0.1.29"
 tracing-subscriber = { version = "0.3.0", features = ["env-filter"] }
+
+# Implements the types defined in the Otel spec
+opentelemetry = { version = "0.20.0", features = ["rt-tokio"] }
+# Integration between the tracing crate and the opentelemetry crate
+tracing-opentelemetry = "0.21.0" 
+# Allows you to export data to Jaeger
+opentelemetry-jaeger = { version = "0.19.0", features = ["rt-tokio"] }

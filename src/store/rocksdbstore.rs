@@ -31,6 +31,7 @@ use rocksdb::ColumnFamily;
 use rocksdb::ColumnFamilyDescriptor;
 use rocksdb::Direction;
 use rocksdb::Options;
+use rocksdb::WriteOptions;
 use rocksdb::DB;
 use serde::Deserialize;
 use serde::Serialize;
@@ -105,6 +106,7 @@ impl StateMachine {
             })
     }
     fn set_last_membership(&self, membership: StoredMembership<NodeId, Node>) -> StorageResult<()> {
+        let opts = WriteOptions::default();
         self.db
             .put_cf(
                 self.db.cf_handle("state_machine").expect("cf_handle"),

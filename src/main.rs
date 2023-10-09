@@ -9,10 +9,11 @@ use openraft::Config;
 use std::fmt::Display;
 use std::io::Cursor;
 use std::sync::Arc;
-use tracing_subscriber::EnvFilter;
+// use tracing_subscriber::EnvFilter;
 
-// use crate::store::rocksdbstore::RocksDbStore;
-// use store::memstore::MemStore;
+use opentelemetry::global;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+
 use crate::store::rocksdbstore::RocksDbStore;
 use crate::store::Request;
 use crate::store::Response;
@@ -84,13 +85,35 @@ pub struct Opt {
 #[actix_web::main]
 async fn main() {
     // Setup the logger
-    tracing_subscriber::fmt()
-        .with_target(true)
-        .with_thread_ids(true)
-        .with_level(true)
-        .with_ansi(false)
-        .with_env_filter(EnvFilter::from_default_env())
-        .init();
+    // tracing_subscriber::fmt()
+    //     .with_target(true)
+    //     .with_thread_ids(true)
+    //     .with_level(true)
+    //     .with_ansi(false)
+    //     .with_env_filter(EnvFilter::from_default_env())
+    //     .init();
+
+    // Allows you to pass along context (i.e., trace IDs) across services
+    global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+    // Sets up the machinery needed to export data to Jaeger
+    // There are other OTel crates that provide pipelines for the vendors
+    // mentioned earlier.
+    let tracer = opentelemetry_jaeger::new_agent_pipeline()
+        .with_service_name("raft-log-store")
+        .install_batch(opentelemetry::runtime::Tokio)
+        .unwrap();
+
+    // Create a tracing layer with the configured tracer
+    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    // The SubscriberExt and SubscriberInitExt traits are needed to extend the
+    // Registry to accept `opentelemetry (the OpenTelemetryLayer type).
+    tracing_subscriber::registry()
+        .with(opentelemetry)
+        // Continue logging to stdout
+        .with(fmt::Layer::default())
+        .try_init()
+        .unwrap();
 
     // Parse the parameters passed by arguments.
     let options = Opt::parse();
