@@ -5,6 +5,7 @@ use std::io::Cursor;
 use std::ops::RangeBounds;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Instant;
 
 use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
@@ -211,9 +212,15 @@ impl RocksDbStore {
         subject: ErrorSubject<NodeId>,
         verb: ErrorVerb,
     ) -> Result<(), StorageIOError<NodeId>> {
+        let start = Instant::now(); // start the timer
+
         self.db
             .flush_wal(false)
             .map_err(|e| StorageIOError::new(subject, verb, AnyError::new(&e)))?;
+
+        let elapsed = start.elapsed(); // get the time elapsed
+        println!("**bench**: flush() time: {:?}", elapsed);
+
         Ok(())
     }
 
@@ -342,12 +349,15 @@ impl RaftLogReader<TypeConfig> for Arc<RocksDbStore> {
         &mut self,
         range: RB,
     ) -> StorageResult<Vec<Entry<TypeConfig>>> {
+        let start_time = Instant::now(); // Start timer
+
         let start = match range.start_bound() {
             std::ops::Bound::Included(x) => id_to_bin(*x),
             std::ops::Bound::Excluded(x) => id_to_bin(*x + 1),
             std::ops::Bound::Unbounded => id_to_bin(0),
         };
-        self.db
+        let result = self
+            .db
             .iterator_cf(
                 self.logs(),
                 rocksdb::IteratorMode::From(&start, Direction::Forward),
@@ -365,7 +375,12 @@ impl RaftLogReader<TypeConfig> for Arc<RocksDbStore> {
             })
             .take_while(|(id, _)| range.contains(id))
             .map(|x| x.1)
-            .collect()
+            .collect();
+
+        let duration = start_time.elapsed(); // End Timer and get Duration
+        println!("**bench**: try_get_log_entries(): {} ms", duration.as_millis());
+
+        result
     }
 }
 
@@ -373,6 +388,8 @@ impl RaftLogReader<TypeConfig> for Arc<RocksDbStore> {
 impl RaftSnapshotBuilder<TypeConfig> for Arc<RocksDbStore> {
     #[tracing::instrument(level = "trace", skip(self))]
     async fn build_snapshot(&mut self) -> Result<Snapshot<TypeConfig>, StorageError<NodeId>> {
+        let start = Instant::now();
+
         let data;
         let last_applied_log;
         let last_membership;
@@ -409,6 +426,9 @@ impl RaftSnapshotBuilder<TypeConfig> for Arc<RocksDbStore> {
         };
 
         self.set_current_snapshot_(snapshot)?;
+
+        let end = Instant::now();
+        println!("**bench**: build_snapshot(): {} ms", (end - start).as_millis());
 
         Ok(Snapshot {
             meta,
@@ -538,6 +558,8 @@ impl RaftStorage<TypeConfig> for Arc<RocksDbStore> {
             "decoding snapshot for installation"
         );
 
+        let start = Instant::now();
+
         let new_snapshot = StoredSnapshot {
             meta: meta.clone(),
             data: snapshot.into_inner(),
@@ -555,6 +577,10 @@ impl RaftStorage<TypeConfig> for Arc<RocksDbStore> {
         }
 
         self.set_current_snapshot_(new_snapshot)?;
+
+        let elapsed = start.elapsed();
+        println!("**bench**: install_snapshot(): {} ms", elapsed.as_millis());
+
         Ok(())
     }
 

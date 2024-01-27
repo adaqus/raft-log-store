@@ -8,7 +8,7 @@ ENV RUST_BACKTRACE=1
 
 RUN echo "Installing packages..." \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates libssl-dev openssl sshpass \
+    && apt-get install -y --no-install-recommends ca-certificates libssl-dev openssl sshpass clang \
     && apt-get clean \
     && echo "Installing sccache..." \
     && mkdir /tmp/sccache \

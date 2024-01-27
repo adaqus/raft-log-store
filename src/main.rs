@@ -109,7 +109,7 @@ async fn main() {
     let config = Arc::new(config.validate().unwrap());
 
     // Create a instance of where the Raft data will be stored.
-    let store = RocksDbStore::new("./db").await;
+    let store = RocksDbStore::new(format!("./db-{node_id}")).await;
 
     let (log_store, state_machine) = Adaptor::new(store.clone());
 

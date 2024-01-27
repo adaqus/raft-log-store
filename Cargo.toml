@@ -8,7 +8,7 @@ actix-web = "4.3.1"
 async-trait = "0.1.51"
 byteorder = "1"
 clap = { version = "3", features = ["derive"] }
-openraft = { git = "https://github.com/datafuselabs/openraft", branch = "main", features = ["serde"] }
+openraft = { git = "https://github.com/datafuselabs/openraft", rev = "8938f3144e358eeb5cdaba2e025e902cdf8cd24a", features = ["serde"] }
 reqwest = { version = "0.11.4", features = ["json"] }
 rocksdb = "0.21.0"
 serde = { version = "1", features = ["derive"] }
